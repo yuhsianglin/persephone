@@ -48,7 +48,11 @@ KALDI_ROOT = config_file.get("PATHS", "KALDI_ROOT_PATH", fallback="/home/oadams/
 OPENFST_BIN_PATH = config_file.get("PATHS", "OPEN_FST_BIN_PATH", fallback="/home/oadams/tools/openfst-1.6.2/src/bin")
 
 # Fetch the path of the logging.ini file installed by setuptools.
-from pkg_resources import Requirement, resource_filename
-logging_ini_path = resource_filename(Requirement.parse("persephone"), "./modules/persephone/persephone/logging.ini")
+#from pkg_resources import Requirement, resource_filename
+#logging_ini_path = resource_filename(Requirement.parse("persephone"), "persephone/logging.ini")
 
-LOGGING_INI_PATH = config_file.get("PATHS", "log_ini_path", fallback="./modules/persephone/persephone/logging.ini")
+#LOGGING_INI_PATH = config_file.get("PATHS", "log_ini_path", fallback=logging_ini_path)
+
+### For MCDS ###
+# Since we do not pip install persephone, we hard code LOGGING_INI_PATH for now
+LOGGING_INI_PATH = "./modules/persephone/persephone/logging.ini"
