@@ -23,7 +23,7 @@ class CorpusReader:
 
     rand = True
 
-    def __init__(self, corpus, num_train=None, batch_size=None, max_samples=None, rand_seed=0):
+    def __init__(self, corpus, num_train=None, batch_size=None, max_samples=None, rand_seed=0, transcribe_new=False):
         """ corpus: The Corpus object that interfaces with a given corpus.
             num_train: The number of training instances from the corpus used.
             batch_size: The size of the batches to yield. If None, then it is
@@ -36,47 +36,57 @@ class CorpusReader:
 
         self.corpus = corpus
 
+        self.transcribe_new = transcribe_new
+
         if max_samples:
             raise NotImplementedError("Not yet implemented.")
 
-        if not num_train:
-            if not batch_size:
-                batch_size = 64
-            num_train = len(corpus.get_train_fns()[0])
-            num_batches = int(num_train / batch_size)
-            num_train = num_batches * batch_size
-        self.num_train = num_train
-        print("Number of training utterances: {}".format(num_train))
-        print("Batch size: {}".format(batch_size))
-        print("Batches per epoch: {}".format(int(num_train/batch_size)))
-
-        if batch_size:
-            self.batch_size = batch_size
-            if num_train % batch_size != 0:
-                raise PersephoneException("""Number of training examples %d not divisible
-                                   by batch size %d.""" % (num_train, batch_size))
+        if self.transcribe_new:
+            self.num_transcribe = len(corpus.get_untranscribed_fns())
+            self.batch_size = batch_size if batch_size else 64
         else:
-            # Dynamically change batch size based on number of training
-            # examples.
-            self.batch_size = int(num_train / 32.0)
-            if self.batch_size > 64:
-                # I was getting OOM errors when training with 4096 sents, as
-                # the batch size jumped to 128
-                self.batch_size = 64
-            # For now we hope that training numbers are powers of two or
-            # something... If not, crash before anything else happens.
-            assert num_train % self.batch_size == 0
+            if not num_train:
+                if not batch_size:
+                    batch_size = 64
+                num_train = len(corpus.get_train_fns()[0])
+                num_batches = int(num_train / batch_size)
+                num_train = num_batches * batch_size
+            self.num_train = num_train
+            print("Number of training utterances: {}".format(num_train))
+            print("Batch size: {}".format(batch_size))
+            print("Batches per epoch: {}".format(int(num_train/batch_size)))
 
-        random.seed(rand_seed)
+            if batch_size:
+                self.batch_size = batch_size
+                if num_train % batch_size != 0:
+                    raise PersephoneException("""Number of training examples %d not divisible
+                                       by batch size %d.""" % (num_train, batch_size))
+            else:
+                # Dynamically change batch size based on number of training
+                # examples.
+                self.batch_size = int(num_train / 32.0)
+                if self.batch_size > 64:
+                    # I was getting OOM errors when training with 4096 sents, as
+                    # the batch size jumped to 128
+                    self.batch_size = 64
+                # For now we hope that training numbers are powers of two or
+                # something... If not, crash before anything else happens.
+                assert num_train % self.batch_size == 0
 
-        # Make a copy of the training prefixes, randomize their order, and take
-        # a subset. Doing random slection of a subset of training now ensures
-        # the selection of of training sentences is invariant between calls to
-        # train_batch_gen()
-        self.train_fns = list(zip(*corpus.get_train_fns()))
-        if self.rand:
-            random.shuffle(self.train_fns)
-        self.train_fns = self.train_fns[:self.num_train]
+            random.seed(rand_seed)
+
+            # Make a copy of the training prefixes, randomize their order, and take
+            # a subset. Doing random slection of a subset of training now ensures
+            # the selection of of training sentences is invariant between calls to
+            # train_batch_gen()
+
+            # This would give you [(feat_fn_1, label_fn_1), ...]
+            self.train_fns = list(zip(*corpus.get_train_fns()))
+
+            if self.rand:
+                random.shuffle(self.train_fns)
+            self.train_fns = self.train_fns[:self.num_train]
+        # End if transcribe_new
 
     def load_batch(self, fn_batch):
         """ Loads a batch with the given prefixes. The prefixes is the full path to the
@@ -182,10 +192,16 @@ class CorpusReader:
     #def __init__(self, corpus, num_train=None, batch_size=None, max_samples=None, rand_seed=0):
 
     def __repr__(self):
-        return ("%s(" % self.__class__.__name__ +
-                "num_train=%s,\n" % repr(self.num_train) +
-                "\tbatch_size=%s,\n" % repr(self.batch_size) +
-                "\tcorpus=\n%s)" % repr(self.corpus))
+        if self.transcribe_new:
+            return ("%s(" % self.__class__.__name__ +
+                    "num_transcribe=%s,\n" % repr(self.num_transcribe) +
+                    "\tbatch_size=%s,\n" % repr(self.batch_size) +
+                    "\tcorpus=\n%s)" % repr(self.corpus))
+        else:
+            return ("%s(" % self.__class__.__name__ +
+                    "num_train=%s,\n" % repr(self.num_train) +
+                    "\tbatch_size=%s,\n" % repr(self.batch_size) +
+                    "\tcorpus=\n%s)" % repr(self.corpus))
 
     def calc_time(self):
         """

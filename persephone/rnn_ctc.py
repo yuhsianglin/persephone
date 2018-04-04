@@ -24,7 +24,7 @@ class Model(model.Model):
                 print("%s=%s" % (key, val), file=desc_f)
 
     def __init__(self, exp_dir, corpus_reader, num_layers=3,
-                 hidden_size=250, beam_width=100, decoding_merge_repeated=True):
+                 hidden_size=250, beam_width=100, decoding_merge_repeated=True, transcribe_new=False):
         super().__init__(exp_dir, corpus_reader)
 
         if not os.path.isdir(exp_dir):
@@ -44,7 +44,8 @@ class Model(model.Model):
 
         # Initialize placeholders for feeding data to model.
         self.batch_x = tf.placeholder(
-                tf.float32, [None, None, corpus_reader.corpus.num_feats])
+                    tf.float32, [None, None, corpus_reader.corpus.num_feats])
+
         self.batch_x_lens = tf.placeholder(tf.int32, [None])
         self.batch_y = tf.sparse_placeholder(tf.int32)
 
