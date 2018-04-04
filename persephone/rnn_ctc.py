@@ -24,7 +24,7 @@ class Model(model.Model):
                 print("%s=%s" % (key, val), file=desc_f)
 
     def __init__(self, exp_dir, corpus_reader, num_layers=3,
-                 hidden_size=250, beam_width=100, decoding_merge_repeated=True, transcribe_new=False):
+                 hidden_size=250, beam_width=100, decoding_merge_repeated=True):
         super().__init__(exp_dir, corpus_reader)
 
         if not os.path.isdir(exp_dir):
